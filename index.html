@@ -3,330 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 공무원 문서 검토 도우미</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>AI 당직 시스템 - 민원 분류</title>
     <style>
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-        }
-        .highlight {
-            background-color: #fef9c3; /* 노란색 200 */
-            border-radius: 3px;
-            padding: 1px 2px;
-            font-weight: 500;
-        }
-        .highlight-ai {
-            background-color: #dbeafe; /* 파란색 200 */
-            border-radius: 3px;
-            padding: 1px 2px;
-            font-weight: 500;
-            cursor: help;
-        }
-        .change-card {
-            transition: all 0.3s ease;
-        }
-        .change-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background-color: #f8f9fa; }
+        h1 { color: #333; text-align: center; }
+        textarea { width: 100%; box-sizing: border-box; min-height: 120px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 16px; }
+        button { display: block; width: 100%; padding: 12px 15px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        #result { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 8px; text-align: center; font-size: 1.2em; font-weight: bold; min-height: 25px;}
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
-
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">AI 공무원 문서 검토 도우미</h1>
-            <p class="mt-2 text-md text-slate-600">규칙 기반 검사와 AI의 지능형 교정으로 문서의 완성도를 높여보세요.</p>
-        </header>
-
-        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- 입력 섹션 -->
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h2 class="text-xl font-semibold mb-3">1. 원본 내용 입력</h2>
-                <textarea id="originalText" class="w-full h-80 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="이곳에 검토할 문서 내용을 붙여넣거나 입력하세요."></textarea>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <button id="correctButton" class="w-full bg-slate-600 text-white py-2 px-4 rounded-lg hover:bg-slate-700 active:bg-slate-800 font-semibold transition shadow">1단계: 기본 규칙 검사</button>
-                    <button id="aiCorrectButton" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 active:bg-blue-800 font-semibold transition shadow flex items-center justify-center gap-2" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path><path d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10z"></path></svg>
-                        <span>2단계: AI로 다듬기</span>
-                        <div id="aiLoader" class="loader hidden"></div>
-                    </button>
-                </div>
-                 <button id="clearButton" class="w-full bg-slate-200 text-slate-800 py-2 px-4 rounded-lg hover:bg-slate-300 active:bg-slate-400 font-semibold transition shadow mt-2">전체 내용 지우기</button>
-            </div>
-
-            <!-- 결과 섹션 -->
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-xl font-semibold">2. 수정된 내용 확인</h2>
-                    <button id="copyButton" class="bg-green-500 text-white py-1 px-3 rounded-lg hover:bg-green-600 active:bg-green-700 font-semibold transition shadow-sm text-sm disabled:bg-slate-300" disabled>복사하기</button>
-                </div>
-                <div id="correctedText" class="w-full h-80 p-3 border border-slate-300 rounded-lg bg-slate-50 overflow-y-auto whitespace-pre-wrap">
-                    <p class="text-slate-400">수정된 내용이 여기에 표시됩니다.</p>
-                </div>
-                 <div id="messageBox" class="mt-4 text-center h-6"></div>
-            </div>
-        </main>
-
-        <!-- 변경 사항 섹션 -->
-        <section class="mt-8">
-            <h2 class="text-2xl font-bold text-center mb-6">변경 사항 목록 (<span id="changeCount">0</span>개)</h2>
-            <div id="changesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div id="noChanges" class="col-span-full text-center p-8 bg-white rounded-xl shadow-md">
-                    <p class="text-slate-500">아직 변경된 내용이 없습니다.</p>
-                </div>
-            </div>
-        </section>
-    </div>
+<body>
+    <h1>🤖 AI 당직 시스템</h1>
+    <p>분류하고 싶은 민원 내용을 입력하고 '분류하기' 버튼을 누르세요.</p>
+    
+    <textarea id="complaintText" placeholder="예: 도로에 고라니가 쓰러져 있어요. 로드킬 같아요."></textarea>
+    <button onclick="classifyComplaint()">분류하기</button>
+    
+    <div id="result"></div>
 
     <script>
-        // DOM Elements
-        const originalTextArea = document.getElementById('originalText');
-        const correctedDiv = document.getElementById('correctedText');
-        const correctButton = document.getElementById('correctButton');
-        const aiCorrectButton = document.getElementById('aiCorrectButton');
-        const clearButton = document.getElementById('clearButton');
-        const copyButton = document.getElementById('copyButton');
-        const changesList = document.getElementById('changesList');
-        const changeCountSpan = document.getElementById('changeCount');
-        const noChangesDiv = document.getElementById('noChanges');
-        const messageBox = document.getElementById('messageBox');
-        const aiLoader = document.getElementById('aiLoader');
-
-        let currentCorrectedText = "";
-        let allChanges = [];
-
-        // 행정안전부 공문서 작성 지침 기반 규칙
-        const correctionRules = [
-            { original: /(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/g, corrected: '$1. $2. $3.', description: '날짜 형식 표준화' },
-            { original: /(\d{1,2})\s*시\s*(\d{1,2})\s*분/g, corrected: '$1:$2', description: '시간 형식 표준화' },
-            { original: /^\s*첫째, ?/gm, corrected: '1. ', description: '항목 번호: "첫째," → "1."' },
-            { original: /^\s*둘째, ?/gm, corrected: '2. ', description: '항목 번호: "둘째," → "2."' },
-            { original: /^\s*셋째, ?/gm, corrected: '3. ', description: '항목 번호: "셋째," → "3."' },
-            { original: /^붙임\s*:/gm, corrected: '붙임  ', description: '"붙임:" → "붙임  " (2칸 띄움)' },
-            { original: /시건장치/g, corrected: '잠금장치', description: '일본식 용어 수정' },
-            { original: /금일/g, corrected: '오늘', description: '일본식 한자어 수정' },
-            { original: /명일/g, corrected: '내일', description: '일본식 한자어 수정' },
-            { original: /요망합니다/g, corrected: '하시기 바랍니다', description: '권위적 표현 수정' },
-            { original: /\s+([.,?!%℃°])/g, corrected: '$1', description: '문장 부호 앞 공백 제거' },
-            { original: /([.,?!])([가-힣A-Za-z0-9])/g, corrected: '$1 $2', description: '문장 부호 뒤 공백 추가' },
-            { original: /(제)(\d+)(조)/g, corrected: '$1$2$3', description: '"제 00 조" → "제00조"' },
-            { original: /(제)(\d+)(항)/g, corrected: '$1$2$3', description: '"제 00 항" → "제00항"' },
-        ];
-
-        // 1단계: 규칙 기반 검사
-        function runRuleBasedCorrections() {
-            const originalText = originalTextArea.value;
-            if (!originalText.trim()) {
-                resetUI();
+        async function classifyComplaint() {
+            const text = document.getElementById('complaintText').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!text) {
+                resultDiv.innerHTML = '<span style="color: red;">민원 내용을 입력해주세요.</span>';
                 return;
-            }
-
-            let correctedText = originalText;
-            const changes = [];
-
-            correctionRules.forEach(rule => {
-                const matches = [...correctedText.matchAll(rule.original)];
-                if (matches.length > 0) {
-                    matches.forEach(match => {
-                        let correctedValue = match[0].replace(rule.original, rule.corrected);
-                        if (!changes.some(c => c.original === match[0] && c.corrected === correctedValue)) {
-                            changes.push({
-                                original: match[0].trim(),
-                                corrected: correctedValue.trim(),
-                                description: rule.description,
-                                type: 'rule'
-                            });
-                        }
-                    });
-                    correctedText = correctedText.replace(rule.original, rule.corrected);
-                }
-            });
-
-            // "끝." 처리
-            const lines = correctedText.trim().split('\n');
-            const lastLine = lines[lines.length - 1].trim();
-            if (!lastLine.startsWith('붙임') && lastLine !== '끝.' && !lastLine.endsWith('끝.')) {
-                 changes.push({
-                    original: lastLine,
-                    corrected: lastLine + '\n\n끝.',
-                    description: '본문 마지막에 "끝." 추가',
-                    type: 'rule'
-                });
-                correctedText = correctedText.trim() + '\n\n끝.';
             }
             
-            allChanges = changes;
-            currentCorrectedText = correctedText;
-            displayResults();
-            aiCorrectButton.disabled = false;
-            showMessage('✅ 기본 규칙 검사가 완료되었습니다. AI로 다듬기를 진행할 수 있습니다.', 'green');
-        }
-
-        // 2단계: AI 기반 검사
-        async function runAiCorrections() {
-            if (!currentCorrectedText.trim()) {
-                showMessage('먼저 검사할 내용을 입력하고 기본 규칙 검사를 실행해주세요.', 'red');
-                return;
-            }
-
-            toggleAiLoading(true);
-
+            resultDiv.innerText = '분석 중...';
+            
             try {
-                // *** 여기가 수정된 부분입니다 ***
-                // 직접 Google API를 호출하는 대신, 우리 서버의 'ai-proxy' 기능을 호출합니다.
-                const response = await fetch('/.netlify/functions/ai-proxy', {
+                const response = await fetch('/api/classify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: currentCorrectedText }), // 서버로 텍스트를 전송
+                    body: JSON.stringify({ text: text })
                 });
-
-                if (!response.ok) {
-                    const errorResult = await response.json();
-                    throw new Error(errorResult.error || `서버 요청 실패: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                // *** 여기까지 수정되었습니다 ***
                 
-                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
-                    const rawJson = result.candidates[0].content.parts[0].text;
-                    const cleanedJson = rawJson.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const aiResult = JSON.parse(cleanedJson);
-
-                    currentCorrectedText = aiResult.revised_text;
-                    const aiChanges = aiResult.changes.map(c => ({ ...c, type: 'ai' }));
-                    allChanges = [...allChanges, ...aiChanges]; // 기존 변경사항에 AI 변경사항 추가
-                    
-                    displayResults();
-                    showMessage('✨ AI가 성공적으로 문서를 다듬었습니다!', 'blue');
-                } else {
-                    console.error("API 응답 형식 오류:", result);
-                    throw new Error('AI로부터 유효한 응답을 받지 못했습니다.');
-                }
-
+                if (!response.ok) throw new Error(`서버 오류: ${response.status}`);
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `AI 분석 결과: <span style="color: #007bff;">${data.category}</span>`;
+                
             } catch (error) {
-                console.error("AI 교정 중 오류 발생:", error);
-                showMessage(`오류 발생: ${error.message}`, 'red');
-            } finally {
-                toggleAiLoading(false);
+                console.error('분류 실패:', error);
+                resultDiv.innerHTML = '<span style="color: red;">분류에 실패했습니다.</span>';
             }
         }
-
-        // 결과 표시 함수
-        function displayResults() {
-            let highlightedText = currentCorrectedText;
-
-            const uniqueChanges = allChanges.filter((change, index, self) =>
-                index === self.findIndex((c) => (
-                    c.original === change.original && c.corrected === change.corrected
-                ))
-            );
-
-            // 하이라이트 적용 (AI 변경사항을 나중에 적용하여 겹칠 경우 AI 하이라이트가 보이도록)
-            uniqueChanges.filter(c => c.type === 'rule').forEach(change => {
-                highlightedText = highlightedText.replace(new RegExp(escapeRegExp(change.corrected), 'g'), `<span class="highlight">${change.corrected}</span>`);
-            });
-            uniqueChanges.filter(c => c.type === 'ai').forEach(change => {
-                highlightedText = highlightedText.replace(new RegExp(escapeRegExp(change.corrected), 'g'), `<span class="highlight-ai" title="${change.reason}">${change.corrected}</span>`);
-            });
-
-            correctedDiv.innerHTML = highlightedText.replace(/\n/g, '<br>') || '<p class="text-slate-400">수정된 내용이 여기에 표시됩니다.</p>';
-            
-            changesList.innerHTML = '';
-            if (uniqueChanges.length > 0) {
-                noChangesDiv.style.display = 'none';
-                uniqueChanges.forEach(change => {
-                    const changeCard = document.createElement('div');
-                    const isAi = change.type === 'ai';
-                    changeCard.className = `change-card bg-white p-4 rounded-lg shadow-sm border ${isAi ? 'border-blue-300' : 'border-slate-200'}`;
-                    changeCard.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <p class="text-sm text-slate-500">${isAi ? change.reason : change.description}</p>
-                            ${isAi ? '<span class="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">AI</span>' : ''}
-                        </div>
-                        <div class="mt-2 flex items-center gap-2 flex-wrap">
-                            <span class="text-red-500 line-through text-sm break-all">${change.original}</span>
-                            <span class="font-bold text-lg">→</span>
-                            <span class="text-blue-600 font-semibold text-sm break-all">${change.corrected}</span>
-                        </div>
-                    `;
-                    changesList.appendChild(changeCard);
-                });
-            } else {
-                noChangesDiv.style.display = 'block';
-                changesList.appendChild(noChangesDiv);
-            }
-
-            changeCountSpan.textContent = uniqueChanges.length;
-            copyButton.disabled = !currentCorrectedText.trim();
-        }
-
-        // UI 초기화
-        function resetUI() {
-            originalTextArea.value = '';
-            correctedDiv.innerHTML = '<p class="text-slate-400">수정된 내용이 여기에 표시됩니다.</p>';
-            changesList.innerHTML = '';
-            noChangesDiv.style.display = 'block';
-            changesList.appendChild(noChangesDiv);
-            changeCountSpan.textContent = '0';
-            copyButton.disabled = true;
-            aiCorrectButton.disabled = true;
-            currentCorrectedText = "";
-            allChanges = [];
-            messageBox.textContent = '';
-        }
-
-        // 기타 유틸 함수
-        function showMessage(text, color) {
-            messageBox.textContent = text;
-            messageBox.className = `mt-4 text-center h-6 font-semibold text-${color}-600`;
-        }
-        
-        function toggleAiLoading(isLoading) {
-            if (isLoading) {
-                aiCorrectButton.disabled = true;
-                aiLoader.classList.remove('hidden');
-                aiCorrectButton.querySelector('span').classList.add('hidden');
-            } else {
-                aiCorrectButton.disabled = false;
-                aiLoader.classList.add('hidden');
-                aiCorrectButton.querySelector('span').classList.remove('hidden');
-            }
-        }
-
-        function copyToClipboard() {
-            navigator.clipboard.writeText(correctedDiv.innerText).then(() => {
-                showMessage('✅ 수정된 내용이 클립보드에 복사되었습니다.', 'green');
-            }).catch(err => {
-                console.error('복사 실패:', err);
-                showMessage('❌ 복사에 실패했습니다. 수동으로 복사해주세요.', 'red');
-            });
-        }
-
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-
-        // 이벤트 리스너
-        correctButton.addEventListener('click', runRuleBasedCorrections);
-        aiCorrectButton.addEventListener('click', runAiCorrections);
-        clearButton.addEventListener('click', resetUI);
-        copyButton.addEventListener('click', copyToClipboard);
-
     </script>
 </body>
 </html>
