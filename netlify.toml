@@ -1,6 +1,7 @@
 [build]
   command = "pip install -r requirements.txt"
-  functions = "api"
+ [functions]
+  directory = "netlify/functions/"
   publish = "." 
 
 [[redirects]]
@@ -8,5 +9,3 @@
   to = "/.netlify/functions/app/:splat"
   status = 200# Netlify가 백엔드 기능 코드를 인식하도록 하는 설정 파일입니다.
   command = "pip install -r requirements.txt"
-[functions]
-  directory = "netlify/functions/"
