@@ -1,11 +1,15 @@
+# --- 빌드 설정 ---------------------------------
 [build]
+  # 정적 사이트 빌드가 필요 없으면 비워 두거나 npm build 등으로 교체
   command = "pip install -r requirements.txt"
- [functions]
-  directory = "netlify/functions/"
-  publish = "." 
+  publish = "."                # index.html 이 루트에 있을 때
 
+# --- Functions 설정 ----------------------------
+[functions]
+  directory = "netlify/functions"   # 함수 파일(.js, .py) 위치
+
+# --- API 프록시 --------------------------------
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/app/:splat"
-  status = 200# Netlify가 백엔드 기능 코드를 인식하도록 하는 설정 파일입니다.
-  command = "pip install -r requirements.txt"
+  from   = "/api/*"
+  to     = "/.netlify/functions/:splat"  # 함수 이름 그대로 매핑
+  status = 200
