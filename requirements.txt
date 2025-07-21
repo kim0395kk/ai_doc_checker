@@ -1,4 +1,3 @@
-Flask
+scikit-learn==1.3.0
 joblib
-scikit-learn==1.3.0  # 버전 명시로 호환성 문제 방지
-pandas
+requests
